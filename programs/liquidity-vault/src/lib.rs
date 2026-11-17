@@ -27,4 +27,9 @@ pub mod liquidity_vault {
     pub fn deposit(ctx: Context<Deposit>, amount: u64) -> Result<()> {
         instructions::deposit::deposit(ctx, amount)
     }
+
+    /// Неделя 10: Вывод средств из vault через CPI со сжиганием share-токенов и возвратом доли подписью PDA.
+    pub fn withdraw(ctx: Context<Withdraw>, shares: u64) -> Result<()> {
+        instructions::withdraw::withdraw(ctx, shares)
+    }
 }

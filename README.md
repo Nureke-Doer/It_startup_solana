@@ -178,3 +178,21 @@ flowchart TD
 
 ---
 
+## 6. Неделя 10 — Вывод средств (Withdraw) и CPI с подписью PDA
+
+### Схема подписей в CPI при выводе
+1. **Сжигание долей (`token::burn`)**:
+   - Вызывается через `CpiContext::new`, так как владельцем `user_share_account` является сам пользователь (`user: Signer`), подписывающий внешнюю транзакцию.
+2. **Возврат базовых токенов (`token::transfer_checked`)**:
+   - Вызывается через `CpiContext::new_with_signer`, где от имени `VaultState` PDA передаются сиды `&[b"vault", deposit_mint.as_ref(), &[vault.bump]]`.
+3. **Расчёт суммы к возврату (`calculate_tokens_to_withdraw`)**:
+   $$\text{tokens\_out} = \left\lfloor \frac{\text{shares} \times \text{vault\_balance}}{\text{total\_shares}} \right\rfloor$$
+
+### Транзакция Недели 10 в Solana Devnet
+- **Вывод `200.0` share-токенов (`withdraw`)**: [`2N9YDXQ14WdpjpSUrrXLUyFnkE6PXZQVgD1H1tijQr2cA2zNqXQvjoWwcBbXbPUqa9GnDCDBsa9uh8kTeFVfaiFB`](https://explorer.solana.com/tx/2N9YDXQ14WdpjpSUrrXLUyFnkE6PXZQVgD1H1tijQr2cA2zNqXQvjoWwcBbXbPUqa9GnDCDBsa9uh8kTeFVfaiFB?cluster=devnet)
+  - Сожжено долей: `200.0` (`200_000_000` raw)
+  - Возвращено базовых токенов из `token_vault`: `200.0` (`200_000_000` raw)
+  - Остаток в хранилище для работы стратегии: `800.0` токенов.
+
+---
+

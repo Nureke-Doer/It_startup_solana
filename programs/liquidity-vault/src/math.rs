@@ -31,3 +31,30 @@ pub fn calculate_shares_to_mint(
     Ok(shares)
 }
 
+/// Расчёт количества базовых токенов к возврату при сжигании share-токенов (Неделя 10).
+///
+/// Правило:
+/// `tokens_out = shares_to_burn * vault_balance / total_shares` (в `u128`, округление вниз).
+pub fn calculate_tokens_to_withdraw(
+    shares_to_burn: u64,
+    vault_balance: u64,
+    total_shares: u64,
+) -> Result<u64> {
+    require!(shares_to_burn > 0, VaultError::ZeroShares);
+    require!(
+        total_shares > 0 && shares_to_burn <= total_shares,
+        VaultError::InsufficientShares
+    );
+
+    let tokens_u128 = (shares_to_burn as u128)
+        .checked_mul(vault_balance as u128)
+        .ok_or(VaultError::MathOverflow)?
+        .checked_div(total_shares as u128)
+        .ok_or(VaultError::MathOverflow)?;
+
+    let tokens = u64::try_from(tokens_u128).map_err(|_| VaultError::MathOverflow)?;
+    require!(tokens > 0, VaultError::ZeroAmount);
+
+    Ok(tokens)
+}
+

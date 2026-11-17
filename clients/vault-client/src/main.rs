@@ -84,3 +84,6 @@ COMMANDS:
 
   Week 9 (Deposit & Share Tokens):
     deposit --amount <UI_AMT>   Deposit tokens into vault and mint proportional share tokens
+
+  Week 10 (CPI & Withdraw):
+    withdraw --shares <UI_AMT>  Burn share tokens and withdraw proportional underlying tokens
