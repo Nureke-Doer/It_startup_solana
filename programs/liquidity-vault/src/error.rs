@@ -6,5 +6,9 @@ pub enum VaultError {
     Unauthorized,
     #[msg("Amount must be greater than zero")]
     ZeroAmount,
+    #[msg("Computed share amount must be greater than zero")]
+    ZeroShares,
+    #[msg("Arithmetic overflow or underflow in vault calculation")]
+    MathOverflow,
 }
 

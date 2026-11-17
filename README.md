@@ -161,3 +161,20 @@ flowchart TD
 
 ---
 
+## 5. Неделя 9 — Депозит и математика долей (Share Tokens)
+
+### Формула расчёта долей
+В модуле `programs/liquidity-vault/src/math.rs` реализована функция `calculate_shares_to_mint`:
+- Если хранилище пустое (`total_shares == 0` или `vault_balance == 0`), доли выпускаются `1:1`:
+  $$\text{shares} = \text{amount}$$
+- При последующих депозитах расчёт ведётся в `u128` с целочисленным делением вниз (в пользу хранилища):
+  $$\text{shares} = \left\lfloor \frac{\text{amount} \times \text{total\_shares}}{\text{vault\_balance}} \right\rfloor$$
+- Если из-за малого размера вклада $\text{shares} = 0$, возвращается ошибка `VaultError::ZeroSharesMinted`.
+
+### Транзакция Недели 9 в Solana Devnet
+- **Депозит `1000.0` токенов (`deposit`)**: [`MByYftZVVVcxMiacMW5vjQMgLzhHT5CPMau1hULKzSnoFvmBYpG7hUTEd5bh7qb5QcFrpvqhWbr4nTYuJGApQKu`](https://explorer.solana.com/tx/MByYftZVVVcxMiacMW5vjQMgLzhHT5CPMau1hULKzSnoFvmBYpG7hUTEd5bh7qb5QcFrpvqhWbr4nTYuJGApQKu?cluster=devnet)
+  - Переведено в `token_vault`: `1000.0` (`1_000_000_000` raw)
+  - Выпущено `share`-токенов через CPI `mint_to` с подписью `VaultState` PDA: `1000.0` (`1_000_000_000` raw)
+
+---
+

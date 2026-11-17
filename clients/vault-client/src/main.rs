@@ -81,3 +81,6 @@ COMMANDS:
     init                        Initialize VaultState, token_vault, and share_mint PDAs
     card                        Create personal UserCard PDA for the wallet
     show                        Show VaultState, UserCard, wallet balances, and Strategy state
+
+  Week 9 (Deposit & Share Tokens):
+    deposit --amount <UI_AMT>   Deposit tokens into vault and mint proportional share tokens

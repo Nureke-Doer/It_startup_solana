@@ -6,6 +6,7 @@ use anchor_lang::{
 use anyhow::{anyhow, bail, Result};
 use liquidity_vault::{
     accounts, instruction,
+    math::calculate_shares_to_mint,
     state::{UserCard, VaultState, SHARE_MINT_SEED, USER_CARD_SEED, VAULT_SEED, VAULT_TOKEN_SEED},
 };
 use solana_keypair::Keypair;
@@ -340,5 +341,97 @@ pub fn cmd_show_vault(rpc: &RpcClient, user: &Keypair, deposit_mint: &Pubkey) ->
     }
 
 
+    Ok(())
+}
+
+/// Неделя 9: Депозит токенов в vault с выпуском share-токенов по доле (`deposit`).
+pub fn cmd_deposit(
+    rpc: &RpcClient,
+    user: &Keypair,
+    deposit_mint: &Pubkey,
+    ui_amount: &str,
+) -> Result<()> {
+    let user_pk = Pubkey::new_from_array(user.pubkey().to_bytes());
+    let (vault, _) = derive_vault_pda(deposit_mint);
+    let vault_state = fetch_vault_state(rpc, &vault)?;
+    let (_, decimals) = read_mint_supply_and_decimals(rpc, deposit_mint)?;
+    let amount = parse_ui_amount(ui_amount, decimals)?;
+
+    let (user_card, _) = derive_user_card_pda(&vault, &user_pk);
+    if rpc.get_account(&user_card)?.is_none() {
+        println!("UserCard not found, creating automatically...");
+        cmd_create_card(rpc, user, deposit_mint)?;
+    }
+
+    let user_token_account = derive_ata(&user_pk, deposit_mint, &token_program_id());
+    let user_share_account = derive_ata(&user_pk, &vault_state.share_mint, &token_program_id());
+
+    let user_token_before = read_token_balance(rpc, &user_token_account)?;
+    let user_shares_before = read_token_balance(rpc, &user_share_account)?;
+    let vault_balance_before = read_token_balance(rpc, &vault_state.token_vault)?;
+    let (share_supply_before, _) = read_mint_supply_and_decimals(rpc, &vault_state.share_mint)?;
+
+    let expected_shares =
+        calculate_shares_to_mint(amount, vault_balance_before, share_supply_before)
+            .map_err(|e| anyhow!("Share calculation failed: {}", e))?;
+
+    let ix = Instruction {
+        program_id: liquidity_vault::id(),
+        accounts: accounts::Deposit {
+            user: user_pk,
+            vault,
+            user_card,
+            deposit_mint: *deposit_mint,
+            share_mint: vault_state.share_mint,
+            user_token_account,
+            token_vault: vault_state.token_vault,
+            user_share_account,
+            token_program: token_program_id(),
+            associated_token_program: ata_program_id(),
+            system_program: system_program::ID,
+        }
+        .to_account_metas(None),
+        data: instruction::Deposit { amount }.data(),
+    };
+
+    let bh = rpc.get_latest_blockhash()?;
+    let msg = Message::new(&[ix], Some(&user.pubkey()));
+    let tx = Transaction::new(&[user], msg, bh.to_bytes().into());
+    let res = rpc.send_and_confirm(&tx, false)?;
+
+    let user_token_after = read_token_balance(rpc, &user_token_account)?;
+    let user_shares_after = read_token_balance(rpc, &user_share_account)?;
+    let minted_shares = user_shares_after.saturating_sub(user_shares_before);
+    if minted_shares != expected_shares {
+        bail!(
+            "Share mint mismatch: expected {}, got {}",
+            expected_shares,
+            minted_shares
+        );
+    }
+
+    println!("=== Deposit Completed (Week 9) ===");
+    println!(
+        "  Deposited Amount : {} ({} raw)",
+        format_ui_amount(amount, decimals),
+        amount
+    );
+    println!(
+        "  Minted Shares    : {} ({} raw)",
+        format_ui_amount(minted_shares, decimals),
+        minted_shares
+    );
+    println!(
+        "  Wallet Token Bal : {} -> {}",
+        format_ui_amount(user_token_before, decimals),
+        format_ui_amount(user_token_after, decimals)
+    );
+    println!(
+        "  Wallet Share Bal : {} -> {}",
+        format_ui_amount(user_shares_before, decimals),
+        format_ui_amount(user_shares_after, decimals)
+    );
+    println!("  Tx Signature     : {}", res.signature);
+    println!("  Explorer URL     : {}", res.explorer_url);
     Ok(())
 }
