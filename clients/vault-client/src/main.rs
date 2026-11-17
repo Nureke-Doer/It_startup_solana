@@ -1,6 +1,7 @@
 pub mod pool;
 pub mod raydium;
 pub mod rpc;
+pub mod strategy;
 pub mod vault;
 
 use std::{env, fs, path::PathBuf, str::FromStr};
@@ -100,3 +101,9 @@ COMMANDS:
                                 Open a wallet LP position around current price via Token-2022 NFT
     pool --pool <POOL> [--position <PERSONAL_POS>]
                                 Inspect Raydium CLMM PoolState and optional PersonalPositionState
+
+  Week 12 (Vault Strategy & Swap via CPI):
+    strategy --mint <MINT_A> --secondary-mint <MINT_B> --pool <POOL>
+                                Initialize vault Strategy PDA and secondary_vault PDA
+    vault-swap --amount <UI_AMT> [--a-to-b | --b-to-a] [--slippage-bps 100] [--reject]
+                                Quote via simulation and swap vault tokens through Raydium CLMM CPI

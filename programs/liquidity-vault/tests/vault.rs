@@ -11,7 +11,11 @@ use liquidity_vault::{
     accounts,
     error::VaultError,
     instruction,
-    state::{UserCard, VaultState, SHARE_MINT_SEED, USER_CARD_SEED, VAULT_SEED, VAULT_TOKEN_SEED},
+    raydium::POOL_STATE_DISCRIMINATOR,
+    state::{
+        Strategy, UserCard, VaultState, SHARE_MINT_SEED, STRATEGY_SEED, STRATEGY_VAULT_SEED,
+        USER_CARD_SEED, VAULT_SEED, VAULT_TOKEN_SEED,
+    },
 };
 use solana_account::Account;
 use solana_keypair::Keypair;
@@ -83,6 +87,32 @@ fn token_account_bytes(mint: &Pubkey, owner: &Pubkey, amount: u64) -> Vec<u8> {
     d[32..64].copy_from_slice(owner.as_ref());
     d[64..72].copy_from_slice(&amount.to_le_bytes());
     d[108] = 1; // AccountState::Initialized
+    d
+}
+
+fn mock_pool_state_bytes(
+    amm_config: &Pubkey,
+    mint_0: &Pubkey,
+    mint_1: &Pubkey,
+    vault_0: &Pubkey,
+    vault_1: &Pubkey,
+    observation: &Pubkey,
+) -> Vec<u8> {
+    let mut d = vec![0u8; 1544];
+    d[0..8].copy_from_slice(&POOL_STATE_DISCRIMINATOR);
+    d[8] = 254;
+    d[9..41].copy_from_slice(amm_config.as_ref());
+    d[73..105].copy_from_slice(mint_0.as_ref());
+    d[105..137].copy_from_slice(mint_1.as_ref());
+    d[137..169].copy_from_slice(vault_0.as_ref());
+    d[169..201].copy_from_slice(vault_1.as_ref());
+    d[201..233].copy_from_slice(observation.as_ref());
+    d[233] = DECIMALS;
+    d[234] = DECIMALS;
+    d[235..237].copy_from_slice(&60u16.to_le_bytes());
+    d[237..253].copy_from_slice(&1_000_000_000u128.to_le_bytes());
+    d[253..269].copy_from_slice(&(1u128 << 64).to_le_bytes());
+    d[269..273].copy_from_slice(&0i32.to_le_bytes());
     d
 }
 

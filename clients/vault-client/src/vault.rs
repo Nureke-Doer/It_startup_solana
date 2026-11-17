@@ -7,7 +7,10 @@ use anyhow::{anyhow, bail, Result};
 use liquidity_vault::{
     accounts, instruction,
     math::{calculate_shares_to_mint, calculate_tokens_to_withdraw},
-    state::{UserCard, VaultState, SHARE_MINT_SEED, USER_CARD_SEED, VAULT_SEED, VAULT_TOKEN_SEED},
+    state::{
+        Strategy, UserCard, VaultState, SHARE_MINT_SEED, STRATEGY_SEED, STRATEGY_VAULT_SEED,
+        USER_CARD_SEED, VAULT_SEED, VAULT_TOKEN_SEED,
+    },
 };
 use solana_keypair::Keypair;
 use solana_message::Message;
@@ -34,6 +37,17 @@ pub fn derive_share_mint_pda(vault: &Pubkey) -> (Pubkey, u8) {
 pub fn derive_user_card_pda(vault: &Pubkey, user: &Pubkey) -> (Pubkey, u8) {
     Pubkey::find_program_address(
         &[USER_CARD_SEED, vault.as_ref(), user.as_ref()],
+        &liquidity_vault::id(),
+    )
+}
+
+pub fn derive_strategy_pda(vault: &Pubkey) -> (Pubkey, u8) {
+    Pubkey::find_program_address(&[STRATEGY_SEED, vault.as_ref()], &liquidity_vault::id())
+}
+
+pub fn derive_secondary_vault_pda(vault: &Pubkey) -> (Pubkey, u8) {
+    Pubkey::find_program_address(
+        &[STRATEGY_VAULT_SEED, vault.as_ref()],
         &liquidity_vault::id(),
     )
 }
@@ -148,6 +162,18 @@ pub fn fetch_user_card(rpc: &RpcClient, card: &Pubkey) -> Result<Option<UserCard
             let mut slice: &[u8] = &acc.data;
             let parsed = UserCard::try_deserialize(&mut slice)
                 .map_err(|e| anyhow!("Failed to decode UserCard: {}", e))?;
+            Ok(Some(parsed))
+        }
+        None => Ok(None),
+    }
+}
+
+pub fn fetch_strategy(rpc: &RpcClient, strategy: &Pubkey) -> Result<Option<Strategy>> {
+    match rpc.get_account(strategy)? {
+        Some(acc) => {
+            let mut slice: &[u8] = &acc.data;
+            let parsed = Strategy::try_deserialize(&mut slice)
+                .map_err(|e| anyhow!("Failed to decode Strategy: {}", e))?;
             Ok(Some(parsed))
         }
         None => Ok(None),
@@ -340,6 +366,31 @@ pub fn cmd_show_vault(rpc: &RpcClient, user: &Keypair, deposit_mint: &Pubkey) ->
         println!("  UserCard PDA     : {} (not created yet)", user_card_pda);
     }
 
+    let (strategy_pda, _) = derive_strategy_pda(&vault_pda);
+    if let Some(strat) = fetch_strategy(rpc, &strategy_pda)? {
+        let (_, sec_decimals) = read_mint_supply_and_decimals(rpc, &strat.secondary_mint)?;
+        let sec_bal = read_token_balance(rpc, &strat.secondary_vault)?;
+        println!("--- Raydium CLMM Strategy ({}) ---", strategy_pda);
+        println!("  Pool State       : {}", strat.pool_state);
+        println!("  AMM Config       : {}", strat.amm_config);
+        println!("  Secondary Mint   : {}", strat.secondary_mint);
+        println!(
+            "  Secondary Vault  : {} (balance={} [{} raw])",
+            strat.secondary_vault,
+            format_ui_amount(sec_bal, sec_decimals),
+            sec_bal
+        );
+        println!("  Active Position  : {}", strat.active_position);
+        if strat.active_position {
+            println!("  Position NFT Mint: {}", strat.position_nft_mint);
+            println!("  Personal Position: {}", strat.personal_position);
+            println!(
+                "  Tick Range       : [{} .. {}]",
+                strat.tick_lower_index, strat.tick_upper_index
+            );
+            println!("  Position Liq (L) : {}", strat.liquidity);
+        }
+    }
 
     Ok(())
 }

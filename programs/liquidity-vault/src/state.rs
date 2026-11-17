@@ -4,6 +4,8 @@ pub const VAULT_SEED: &[u8] = b"vault";
 pub const VAULT_TOKEN_SEED: &[u8] = b"vault_token";
 pub const SHARE_MINT_SEED: &[u8] = b"share_mint";
 pub const USER_CARD_SEED: &[u8] = b"user_card";
+pub const STRATEGY_SEED: &[u8] = b"strategy";
+pub const STRATEGY_VAULT_SEED: &[u8] = b"strategy_vault";
 
 /// Главный аккаунт настроек и учёта хранилища (Неделя 8).
 /// PDA: `["vault", deposit_mint]` — сам выступает authority для `token_vault`,
@@ -33,3 +35,26 @@ pub struct UserCard {
     pub shares_minted: u64,
     pub bump: u8,
 }
+
+/// Стратегия концентрированной ликвидности Raydium CLMM (Недели 12–13).
+/// PDA: `["strategy", vault]`.
+#[account]
+#[derive(InitSpace)]
+pub struct Strategy {
+    pub vault: Pubkey,
+    pub clmm_program: Pubkey,
+    pub pool_state: Pubkey,
+    pub amm_config: Pubkey,
+    pub secondary_mint: Pubkey,
+    pub secondary_vault: Pubkey,
+    pub position_nft_mint: Pubkey,
+    pub position_nft_account: Pubkey,
+    pub personal_position: Pubkey,
+    pub tick_lower_index: i32,
+    pub tick_upper_index: i32,
+    pub liquidity: u128,
+    pub active_position: bool,
+    pub bump: u8,
+    pub secondary_vault_bump: u8,
+}
+
