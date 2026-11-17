@@ -256,3 +256,14 @@ flowchart TD
 
 ---
 
+## 10. Неделя 14 — Интеграция (Capstone Build Week: Фронтенд + Тесты)
+
+- В директории `app/` реализован веб-интерфейс на **Next.js 15 + React 19 + `@solana/wallet-adapter-react`**, напрямую декодирующий бинарные аккаунты `VaultState`, `UserCard`, `Strategy` и `PoolState` из Solana Devnet и собирающий инструкции `create_user_card`, `deposit`, `withdraw`, `swap`, `collect_fees` и `close_position`.
+- В `programs/liquidity-vault/tests/vault.rs` реализованы 4 полных тестовых сценария на **LiteSVM**, проверяющих:
+  1. Инициализацию хранилища, PDA-адреса и карточки пользователей (Неделя 8).
+  2. Депозиты нескольких пользователей, пропорциональный выпуск `share`-токенов и отказ на нулевой депозит (Неделя 9).
+  3. Вывод средств через CPI с распределением дохода хранилища между вкладчиками и проверкой отказа при нехватке `share`-токенов (Неделя 10).
+  4. Инициализацию стратегии, контроль прав `UnauthorizedAdmin` и проверки параметров CPI для `swap`, `open_position`, `collect_fees` и `close_position` (Недели 12–13).
+
+---
+
