@@ -1,3 +1,4 @@
+pub mod pool;
 pub mod raydium;
 pub mod rpc;
 pub mod vault;
@@ -13,6 +14,8 @@ use crate::rpc::RpcClient;
 
 /// Адреса развёрнутых артефактов в Solana Devnet по умолчанию (обновляются после деплоя).
 pub const DEFAULT_DEPOSIT_MINT_DEVNET: &str = "wKGeYnbJWf2iqakmqFkYGcnmWHQ2roJ6jJ1664Zf2oR";
+pub const DEFAULT_SECONDARY_MINT_DEVNET: &str = "EWXdK61y5MT8HfZypYJBLNj2A2paRAc5pXojcpeFkRwu";
+pub const DEFAULT_POOL_STATE_DEVNET: &str = "DKRQA3X9R6oneVnfgXEtCZdQmPRyASYV6rLXv7dBBD3n";
 
 fn load_keypair(custom_path: Option<&str>) -> Result<Keypair> {
     let candidates: Vec<PathBuf> = if let Some(p) = custom_path {
@@ -87,3 +90,13 @@ COMMANDS:
 
   Week 10 (CPI & Withdraw):
     withdraw --shares <UI_AMT>  Burn share tokens and withdraw proportional underlying tokens
+
+  Week 11 (Raydium CLMM Pool & Initial Position):
+    create-token [--decimals 6] [--supply 1000000]
+                                Create a test SPL token and mint initial supply to wallet
+    create-pool --mint <MINT_A> --secondary-mint <MINT_B> [--price 1.0]
+                                Create a Raydium CLMM pool in Devnet
+    open-position --pool <POOL> [--tick-lower -600] [--tick-upper 600] [--amount-0 10000] [--amount-1 10000]
+                                Open a wallet LP position around current price via Token-2022 NFT
+    pool --pool <POOL> [--position <PERSONAL_POS>]
+                                Inspect Raydium CLMM PoolState and optional PersonalPositionState
